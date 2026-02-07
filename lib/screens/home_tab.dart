@@ -15,7 +15,7 @@ class HomeTab extends StatelessWidget {
     final provider = Provider.of<AppProvider>(context);
     final user = provider.currentUser;
 
-    // 1. 参加予定のイベント
+    // 1. 参加予定のイベント (上限5件)
     final myTickets = user != null ? provider.getUserTickets(user.id) : [];
     final myEvents = myTickets
         .map((t) => provider.events.firstWhere(
@@ -38,28 +38,32 @@ class HomeTab extends StatelessWidget {
               ),
             ))
         .where((e) => e.id.isNotEmpty)
+        .take(5)
         .toList();
 
-    // ユーザーの地域の記事を取得
+    // 2. 全国のニュース (新着順、上限5件)
+    final allNews = provider.articles
+        .where((a) => a.category == 'イベント' || a.category == '店舗')
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final limitedAllNews = allNews.take(5).toList();
+
+    // 3. 地域のニュース (新着順、上限5件)
     final localArticles = user != null
         ? provider.getArticlesByCity(user.city)
-        : provider.articles;
-
-    // 2. 地域のニュース (投稿日時が新しい順)
+        : <ArticleModel>[];
     final localNews = localArticles
         .where((a) => a.category == 'イベント' || a.category == '店舗')
         .toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final limitedLocalNews = localNews.take(5).toList();
 
-    // 3. 地域のコラム (アクセス数が多い順)
+    // 4. 地域のコラム (アクセス数順、上限10件)
     final localColumns = localArticles
         .where((a) => a.category == 'インタビュー' || a.category == 'コラム')
         .toList()
       ..sort((a, b) => b.viewCount.compareTo(a.viewCount));
-
-    // 4. 全国のニュース (投稿日時が新しい順)
-    final allNews = provider.articles.toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final limitedLocalColumns = localColumns.take(10).toList();
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
@@ -95,12 +99,12 @@ class HomeTab extends StatelessWidget {
           children: [
             const SizedBox(height: 16),
             
-            // 1. 参加予定のイベント
+            // 1. 参加予定のイベント (カード表示、上限5件)
             if (myEvents.isNotEmpty) ...[
               _SectionTitle(title: '参加予定のイベント'),
               const SizedBox(height: 12),
               SizedBox(
-                height: 200,
+                height: 220,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -113,61 +117,57 @@ class HomeTab extends StatelessWidget {
               const SizedBox(height: 24),
             ],
             
-            // 2. 地域のニュース (新しい順)
-            _SectionTitle(title: '地域のニュース'),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 200,
-              child: localNews.isEmpty
-                  ? const Center(child: Text('ニュースがありません'))
-                  : ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: localNews.length,
-                      itemBuilder: (context, index) {
-                        return _NewsCard(article: localNews[index]);
-                      },
-                    ),
-            ),
-            const SizedBox(height: 24),
+            // 2. 全国のニュース (カード表示、上限5件)
+            if (limitedAllNews.isNotEmpty) ...[
+              _SectionTitle(title: '全国のニュース'),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 200,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: limitedAllNews.length,
+                  itemBuilder: (context, index) {
+                    return _NewsCard(article: limitedAllNews[index]);
+                  },
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
             
-            // 3. 地域のコラム (アクセス数順)
-            _SectionTitle(title: '地域のコラム'),
-            const SizedBox(height: 12),
-            localColumns.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Center(child: Text('コラムがありません')),
-                  )
-                : ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: localColumns.length,
-                    itemBuilder: (context, index) {
-                      return _ColumnCard(article: localColumns[index]);
-                    },
-                  ),
-            const SizedBox(height: 24),
+            // 3. 地域のニュース (カード表示、上限5件)
+            if (limitedLocalNews.isNotEmpty) ...[
+              _SectionTitle(title: '地域のニュース'),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 200,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: limitedLocalNews.length,
+                  itemBuilder: (context, index) {
+                    return _NewsCard(article: limitedLocalNews[index]);
+                  },
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
             
-            // 4. 全国のニュース (新しい順)
-            _SectionTitle(title: '全国のニュース'),
-            const SizedBox(height: 12),
-            allNews.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Center(child: Text('ニュースがありません')),
-                  )
-                : ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: allNews.length > 5 ? 5 : allNews.length,
-                    itemBuilder: (context, index) {
-                      return _ColumnCard(article: allNews[index]);
-                    },
-                  ),
-            const SizedBox(height: 24),
+            // 4. 地域のコラム (リスト表示、上限10件)
+            if (limitedLocalColumns.isNotEmpty) ...[
+              _SectionTitle(title: '地域のコラム'),
+              const SizedBox(height: 12),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: limitedLocalColumns.length,
+                itemBuilder: (context, index) {
+                  return _ColumnListItem(article: limitedLocalColumns[index]);
+                },
+              ),
+              const SizedBox(height: 24),
+            ],
           ],
         ),
       ),
@@ -195,6 +195,7 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
+// イベントカード (横スクロール用)
 class _EventCard extends StatelessWidget {
   final EventModel event;
 
@@ -219,6 +220,13 @@ class _EventCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -227,11 +235,11 @@ class _EventCard extends StatelessWidget {
               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
               child: Image.network(
                 event.imageUrl,
-                height: 120,
+                height: 140,
                 width: double.infinity,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(
-                  height: 120,
+                  height: 140,
                   color: Colors.grey.shade200,
                   child: const Icon(Icons.image, size: 48),
                 ),
@@ -242,20 +250,33 @@ class _EventCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade50,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      dateFormat.format(event.eventDate),
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.green.shade700,
-                        fontWeight: FontWeight.w500,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          dateFormat.format(event.eventDate),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.green.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ),
-                    ),
+                      Text(
+                        '¥${event.ticketPrice.toStringAsFixed(0)}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -277,6 +298,7 @@ class _EventCard extends StatelessWidget {
   }
 }
 
+// ニュースカード (横スクロール用)
 class _NewsCard extends StatelessWidget {
   final ArticleModel article;
 
@@ -299,6 +321,13 @@ class _NewsCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -357,10 +386,11 @@ class _NewsCard extends StatelessWidget {
   }
 }
 
-class _ColumnCard extends StatelessWidget {
+// コラムリストアイテム (縦リスト用)
+class _ColumnListItem extends StatelessWidget {
   final ArticleModel article;
 
-  const _ColumnCard({required this.article});
+  const _ColumnListItem({required this.article});
 
   @override
   Widget build(BuildContext context) {
@@ -379,6 +409,13 @@ class _ColumnCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [

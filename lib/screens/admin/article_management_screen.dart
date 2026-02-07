@@ -27,6 +27,15 @@ class ArticleManagementScreen extends StatelessWidget {
             ),
             child: Row(
               children: [
+                // モバイル用戻るボタン
+                if (MediaQuery.of(context).size.width < 600) ...[
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => Navigator.pop(context),
+                    tooltip: '戻る',
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 const Text(
                   '記事管理',
                   style: TextStyle(

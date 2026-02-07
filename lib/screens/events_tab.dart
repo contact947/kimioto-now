@@ -14,12 +14,12 @@ class EventsTab extends StatelessWidget {
     final user = provider.currentUser;
 
     // 地域のイベント
-    final localEvents = user != null
+    final List<EventModel> localEvents = user != null
         ? provider.getEventsByCity(user.city)
-        : [];
+        : <EventModel>[];
 
     // 全国のイベント
-    final allEvents = provider.getUpcomingEvents();
+    final List<EventModel> allEvents = provider.getUpcomingEvents();
 
     return DefaultTabController(
       length: 2,
@@ -47,8 +47,8 @@ class EventsTab extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-            _EventListTab(events: localEvents.cast<EventModel>()),
-            _EventListTab(events: allEvents.cast<EventModel>()),
+            _EventListTab(events: localEvents),
+            _EventListTab(events: allEvents),
           ],
         ),
       ),
