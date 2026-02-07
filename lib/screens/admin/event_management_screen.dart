@@ -5,13 +5,51 @@ import '../../providers/app_provider.dart';
 import '../../models/event_model.dart';
 import 'event_editor_screen.dart';
 
-class EventManagementScreen extends StatelessWidget {
+class EventManagementScreen extends StatefulWidget {
   const EventManagementScreen({super.key});
+
+  @override
+  State<EventManagementScreen> createState() => _EventManagementScreenState();
+}
+
+class _EventManagementScreenState extends State<EventManagementScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // デバッグ用：画面表示時にデータ状態をログ出力
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _debugPrintEventData();
+    });
+  }
+
+  void _debugPrintEventData() {
+    final provider = Provider.of<AppProvider>(context, listen: false);
+    
+    debugPrint('=== イベント管理画面 デバッグ情報 ===');
+    debugPrint('全イベント数: ${provider.events.length}');
+    
+    if (provider.events.isNotEmpty) {
+      debugPrint('--- イベントリスト ---');
+      for (var event in provider.events) {
+        debugPrint('  - ${event.title}');
+        debugPrint('    場所: ${event.venue} (${event.city})');
+        debugPrint('    日時: ${event.eventDate}');
+        debugPrint('    価格: ¥${event.ticketPrice}');
+        debugPrint('    座席: ${event.availableSeats}/${event.totalSeats}');
+      }
+    } else {
+      debugPrint('イベントデータが空です');
+    }
+    debugPrint('=====================================');
+  }
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<AppProvider>(context);
     final events = provider.events;
+
+    // デバッグ情報を画面に表示（開発中のみ）
+    final bool showDebugInfo = true; // 本番環境では false にする
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
@@ -68,24 +106,52 @@ class EventManagementScreen extends StatelessWidget {
               ],
             ),
           ),
+          // デバッグ情報バー（開発中のみ表示）
+          if (showDebugInfo)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: Colors.amber.shade100,
+              child: Text(
+                'デバッグ: 全イベント=${events.length}件',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.amber.shade900,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
           // リスト
           Expanded(
             child: events.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.event_outlined,
-                            size: 64, color: Colors.grey.shade300),
-                        const SizedBox(height: 16),
-                        Text(
-                          'イベントがありません',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey.shade600,
+                ? Container(
+                    color: Colors.grey.shade50,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.event_outlined,
+                              size: 80, color: Colors.grey.shade300),
+                          const SizedBox(height: 16),
+                          Text(
+                            'イベントがありません',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          Text(
+                            '「新規作成」ボタンからイベントを追加できます',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   )
                 : ListView.builder(
@@ -146,12 +212,52 @@ class _EventCard extends StatelessWidget {
                   width: 120,
                   height: 80,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    width: 120,
-                    height: 80,
-                    color: Colors.grey.shade200,
-                    child: const Icon(Icons.image, size: 32),
-                  ),
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      width: 120,
+                      height: 80,
+                      color: Colors.grey.shade100,
+                      child: Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    debugPrint('画像読み込みエラー (管理画面): $error');
+                    return Container(
+                      width: 120,
+                      height: 80,
+                      color: Colors.grey.shade200,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.image_not_supported, 
+                            size: 32, 
+                            color: Colors.grey.shade400,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'エラー',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
               const SizedBox(width: 16),
