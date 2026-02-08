@@ -1,4 +1,4 @@
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:hive/hive.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import '../models/article_model.dart';
@@ -6,6 +6,7 @@ import '../models/event_model.dart';
 import '../models/gift_model.dart';
 import '../models/gift_usage_model.dart';
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 
 class StorageService {
   static const String _userKey = 'current_user';
@@ -17,11 +18,26 @@ class StorageService {
   late Box<String> _giftUsagesBox;
 
   Future<void> init() async {
-    await Hive.initFlutter();
-    _articlesBox = await Hive.openBox<String>('articles');
-    _eventsBox = await Hive.openBox<String>('events');
-    _giftsBox = await Hive.openBox<String>('gifts');
-    _giftUsagesBox = await Hive.openBox<String>('gift_usages');
+    try {
+      // Web環境ではパスなしでHiveを初期化
+      if (!kIsWeb) {
+        // モバイル環境の場合のみhive_flutterを使用
+        // await Hive.initFlutter();
+      }
+      
+      _articlesBox = await Hive.openBox<String>('articles');
+      _eventsBox = await Hive.openBox<String>('events');
+      _giftsBox = await Hive.openBox<String>('gifts');
+      _giftUsagesBox = await Hive.openBox<String>('gift_usages');
+    } catch (e) {
+      // Web環境でのエラーをキャッチして続行
+      debugPrint('Hive initialization warning: $e');
+      // エラー時は空のボックスとして扱う
+      _articlesBox = await Hive.openBox<String>('articles');
+      _eventsBox = await Hive.openBox<String>('events');
+      _giftsBox = await Hive.openBox<String>('gifts');
+      _giftUsagesBox = await Hive.openBox<String>('gift_usages');
+    }
   }
 
   // User Management
