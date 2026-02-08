@@ -1,18 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'providers/app_provider.dart';
 import 'services/storage_service.dart';
+import 'services/firebase_firestore_service.dart';
 import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Firebase初期化
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
+  // StorageServiceを初期化 (ローカルストレージ用)
   final storage = StorageService();
   await storage.init();
+  
+  // FirebaseFirestoreServiceを初期化
+  final firestoreService = FirebaseFirestoreService();
 
   runApp(
     ChangeNotifierProvider(
-      create: (_) => AppProvider(storage),
+      create: (_) => AppProvider(storage, firestoreService),
       child: const MyApp(),
     ),
   );
