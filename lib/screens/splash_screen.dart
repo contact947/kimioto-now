@@ -14,22 +14,39 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    print('=== SplashScreen initState ===');
     _init();
   }
 
   Future<void> _init() async {
-    final provider = Provider.of<AppProvider>(context, listen: false);
-    await provider.init();
+    print('SplashScreen _init started');
     
-    await Future.delayed(const Duration(seconds: 2));
-    
-    if (!mounted) return;
-    
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => const AuthScreen(),
-      ),
-    );
+    try {
+      final provider = Provider.of<AppProvider>(context, listen: false);
+      print('AppProvider obtained');
+      
+      await provider.init();
+      print('AppProvider initialized');
+      
+      await Future.delayed(const Duration(seconds: 2));
+      print('Delay completed');
+      
+      if (!mounted) {
+        print('Widget not mounted, returning');
+        return;
+      }
+      
+      print('Navigating to AuthScreen...');
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => const AuthScreen(),
+        ),
+      );
+      print('Navigation completed');
+    } catch (e, stackTrace) {
+      print('Error in SplashScreen._init: $e');
+      print('Stack trace: $stackTrace');
+    }
   }
 
   @override

@@ -7,13 +7,9 @@ import 'screens/splash_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // StorageServiceの初期化を完全にスキップ
   final storage = StorageService();
-  try {
-    await storage.init();
-  } catch (e) {
-    // Web環境でHiveが使えない場合でも続行
-    debugPrint('Storage initialization failed, continuing without Hive: $e');
-  }
+  // init()を呼ばずに直接使用
 
   runApp(
     ChangeNotifierProvider(
