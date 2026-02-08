@@ -7,9 +7,8 @@ import 'screens/splash_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // StorageServiceの初期化を完全にスキップ
   final storage = StorageService();
-  // init()を呼ばずに直接使用
+  await storage.init();
 
   runApp(
     ChangeNotifierProvider(

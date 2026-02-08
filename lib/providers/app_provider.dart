@@ -31,58 +31,18 @@ class AppProvider with ChangeNotifier {
 
   // Initialize
   Future<void> init() async {
-    print('AppProvider.init() started');
-    
-    // StorageServiceが初期化されていない場合はデモデータのみ生成
-    try {
-      _currentUser = await _storage.getCurrentUser();
-      print('Current user loaded: ${_currentUser?.email}');
-    } catch (e) {
-      print('Failed to load user: $e');
-      _currentUser = null;
-    }
-    
-    try {
-      _articles = _storage.getArticles();
-      print('Articles loaded: ${_articles.length}');
-    } catch (e) {
-      print('Failed to load articles: $e');
-      _articles = [];
-    }
-    
-    try {
-      _events = _storage.getEvents();
-      print('Events loaded: ${_events.length}');
-    } catch (e) {
-      print('Failed to load events: $e');
-      _events = [];
-    }
-    
-    try {
-      _gifts = _storage.getGifts();
-      print('Gifts loaded: ${_gifts.length}');
-    } catch (e) {
-      print('Failed to load gifts: $e');
-      _gifts = [];
-    }
-    
-    try {
-      _giftUsages = _storage.getGiftUsages();
-      print('Gift usages loaded: ${_giftUsages.length}');
-    } catch (e) {
-      print('Failed to load gift usages: $e');
-      _giftUsages = [];
-    }
+    _currentUser = await _storage.getCurrentUser();
+    _articles = _storage.getArticles();
+    _events = _storage.getEvents();
+    _gifts = _storage.getGifts();
+    _giftUsages = _storage.getGiftUsages();
     
     // デモデータ生成
     if (_articles.isEmpty) {
-      print('Generating demo data...');
       await _generateDemoData();
-      print('Demo data generated');
     }
     
     notifyListeners();
-    print('AppProvider.init() completed');
   }
 
   // User Management

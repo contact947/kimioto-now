@@ -1,4 +1,3 @@
-import 'package:hive/hive.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import '../models/article_model.dart';
@@ -6,33 +5,30 @@ import '../models/event_model.dart';
 import '../models/gift_model.dart';
 import '../models/gift_usage_model.dart';
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 
 class StorageService {
   static const String _userKey = 'current_user';
   static const String _isLoggedInKey = 'is_logged_in';
   
-  late Box<String>? _articlesBox;
-  late Box<String>? _eventsBox;
-  late Box<String>? _giftsBox;
-  late Box<String>? _giftUsagesBox;
+  // Web環境ではHiveを使わず、メモリストレージを使用
+  final Map<String, String> _memoryArticles = {};
+  final Map<String, String> _memoryEvents = {};
+  final Map<String, String> _memoryGifts = {};
+  final Map<String, String> _memoryGiftUsages = {};
   
   bool _isInitialized = false;
 
   Future<void> init() async {
     if (_isInitialized) return;
     
-    try {
-      _articlesBox = await Hive.openBox<String>('articles');
-      _eventsBox = await Hive.openBox<String>('events');
-      _giftsBox = await Hive.openBox<String>('gifts');
-      _giftUsagesBox = await Hive.openBox<String>('gift_usages');
+    if (kIsWeb) {
+      // Web環境ではメモリストレージのみ使用
+      debugPrint('Using memory storage for Web');
       _isInitialized = true;
-    } catch (e) {
-      debugPrint('Hive initialization error: $e');
-      // Web環境でのフォールバック: 初期化失敗時はnullのまま
-      _isInitialized = false;
-      rethrow; // エラーを上位に伝える
+    } else {
+      // モバイル環境（現在未使用）
+      _isInitialized = true;
     }
   }
 
@@ -63,72 +59,86 @@ class StorageService {
 
   // Articles
   Future<void> saveArticles(List<ArticleModel> articles) async {
-    if (_articlesBox == null) return;
-    await _articlesBox!.clear();
-    for (var article in articles) {
-      await _articlesBox!.put(article.id, jsonEncode(article.toJson()));
+    if (kIsWeb) {
+      _memoryArticles.clear();
+      for (var article in articles) {
+        _memoryArticles[article.id] = jsonEncode(article.toJson());
+      }
     }
   }
 
   List<ArticleModel> getArticles() {
-    if (_articlesBox == null) return [];
-    return _articlesBox!.values
-        .map((json) => ArticleModel.fromJson(jsonDecode(json) as Map<String, dynamic>))
-        .toList();
+    if (kIsWeb) {
+      return _memoryArticles.values
+          .map((json) => ArticleModel.fromJson(jsonDecode(json) as Map<String, dynamic>))
+          .toList();
+    }
+    return [];
   }
 
   // Events
   Future<void> saveEvents(List<EventModel> events) async {
-    if (_eventsBox == null) return;
-    await _eventsBox!.clear();
-    for (var event in events) {
-      await _eventsBox!.put(event.id, jsonEncode(event.toJson()));
+    if (kIsWeb) {
+      _memoryEvents.clear();
+      for (var event in events) {
+        _memoryEvents[event.id] = jsonEncode(event.toJson());
+      }
     }
   }
 
   List<EventModel> getEvents() {
-    if (_eventsBox == null) return [];
-    return _eventsBox!.values
-        .map((json) => EventModel.fromJson(jsonDecode(json) as Map<String, dynamic>))
-        .toList();
+    if (kIsWeb) {
+      return _memoryEvents.values
+          .map((json) => EventModel.fromJson(jsonDecode(json) as Map<String, dynamic>))
+          .toList();
+    }
+    return [];
   }
 
   Future<void> saveEvent(EventModel event) async {
-    if (_eventsBox == null) return;
-    await _eventsBox!.put(event.id, jsonEncode(event.toJson()));
+    if (kIsWeb) {
+      _memoryEvents[event.id] = jsonEncode(event.toJson());
+    }
   }
 
   Future<void> deleteEvent(String id) async {
-    if (_eventsBox == null) return;
-    await _eventsBox!.delete(id);
+    if (kIsWeb) {
+      _memoryEvents.remove(id);
+    }
   }
 
   // Gifts
   Future<void> saveGifts(List<GiftModel> gifts) async {
-    if (_giftsBox == null) return;
-    await _giftsBox!.clear();
-    for (var gift in gifts) {
-      await _giftsBox!.put(gift.id, jsonEncode(gift.toJson()));
+    if (kIsWeb) {
+      _memoryGifts.clear();
+      for (var gift in gifts) {
+        _memoryGifts[gift.id] = jsonEncode(gift.toJson());
+      }
     }
   }
 
   List<GiftModel> getGifts() {
-    if (_giftsBox == null) return [];
-    return _giftsBox!.values
-        .map((json) => GiftModel.fromJson(jsonDecode(json) as Map<String, dynamic>))
-        .toList();
+    if (kIsWeb) {
+      return _memoryGifts.values
+          .map((json) => GiftModel.fromJson(jsonDecode(json) as Map<String, dynamic>))
+          .toList();
+    }
+    return [];
   }
 
   // Gift Usages
   Future<void> saveGiftUsage(GiftUsageModel usage) async {
-    if (_giftUsagesBox == null) return;
-    await _giftUsagesBox!.put(usage.id, jsonEncode(usage.toJson()));
+    if (kIsWeb) {
+      _memoryGiftUsages[usage.id] = jsonEncode(usage.toJson());
+    }
   }
 
   List<GiftUsageModel> getGiftUsages() {
-    if (_giftUsagesBox == null) return [];
-    return _giftUsagesBox!.values
-        .map((json) => GiftUsageModel.fromJson(jsonDecode(json) as Map<String, dynamic>))
-        .toList();
+    if (kIsWeb) {
+      return _memoryGiftUsages.values
+          .map((json) => GiftUsageModel.fromJson(jsonDecode(json) as Map<String, dynamic>))
+          .toList();
+    }
+    return [];
   }
 }
