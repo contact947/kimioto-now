@@ -6,37 +6,33 @@ import '../models/event_model.dart';
 import '../models/gift_model.dart';
 import '../models/gift_usage_model.dart';
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
+import 'package:flutter/foundation.dart' show debugPrint;
 
 class StorageService {
   static const String _userKey = 'current_user';
   static const String _isLoggedInKey = 'is_logged_in';
   
-  late Box<String> _articlesBox;
-  late Box<String> _eventsBox;
-  late Box<String> _giftsBox;
-  late Box<String> _giftUsagesBox;
+  late Box<String>? _articlesBox;
+  late Box<String>? _eventsBox;
+  late Box<String>? _giftsBox;
+  late Box<String>? _giftUsagesBox;
+  
+  bool _isInitialized = false;
 
   Future<void> init() async {
+    if (_isInitialized) return;
+    
     try {
-      // Web環境ではパスなしでHiveを初期化
-      if (!kIsWeb) {
-        // モバイル環境の場合のみhive_flutterを使用
-        // await Hive.initFlutter();
-      }
-      
       _articlesBox = await Hive.openBox<String>('articles');
       _eventsBox = await Hive.openBox<String>('events');
       _giftsBox = await Hive.openBox<String>('gifts');
       _giftUsagesBox = await Hive.openBox<String>('gift_usages');
+      _isInitialized = true;
     } catch (e) {
-      // Web環境でのエラーをキャッチして続行
-      debugPrint('Hive initialization warning: $e');
-      // エラー時は空のボックスとして扱う
-      _articlesBox = await Hive.openBox<String>('articles');
-      _eventsBox = await Hive.openBox<String>('events');
-      _giftsBox = await Hive.openBox<String>('gifts');
-      _giftUsagesBox = await Hive.openBox<String>('gift_usages');
+      debugPrint('Hive initialization error: $e');
+      // Web環境でのフォールバック: 初期化失敗時はnullのまま
+      _isInitialized = false;
+      rethrow; // エラーを上位に伝える
     }
   }
 
@@ -67,61 +63,71 @@ class StorageService {
 
   // Articles
   Future<void> saveArticles(List<ArticleModel> articles) async {
-    await _articlesBox.clear();
+    if (_articlesBox == null) return;
+    await _articlesBox!.clear();
     for (var article in articles) {
-      await _articlesBox.put(article.id, jsonEncode(article.toJson()));
+      await _articlesBox!.put(article.id, jsonEncode(article.toJson()));
     }
   }
 
   List<ArticleModel> getArticles() {
-    return _articlesBox.values
+    if (_articlesBox == null) return [];
+    return _articlesBox!.values
         .map((json) => ArticleModel.fromJson(jsonDecode(json) as Map<String, dynamic>))
         .toList();
   }
 
   // Events
   Future<void> saveEvents(List<EventModel> events) async {
-    await _eventsBox.clear();
+    if (_eventsBox == null) return;
+    await _eventsBox!.clear();
     for (var event in events) {
-      await _eventsBox.put(event.id, jsonEncode(event.toJson()));
+      await _eventsBox!.put(event.id, jsonEncode(event.toJson()));
     }
   }
 
   List<EventModel> getEvents() {
-    return _eventsBox.values
+    if (_eventsBox == null) return [];
+    return _eventsBox!.values
         .map((json) => EventModel.fromJson(jsonDecode(json) as Map<String, dynamic>))
         .toList();
   }
 
   Future<void> saveEvent(EventModel event) async {
-    await _eventsBox.put(event.id, jsonEncode(event.toJson()));
+    if (_eventsBox == null) return;
+    await _eventsBox!.put(event.id, jsonEncode(event.toJson()));
   }
 
   Future<void> deleteEvent(String id) async {
-    await _eventsBox.delete(id);
+    if (_eventsBox == null) return;
+    await _eventsBox!.delete(id);
   }
 
   // Gifts
   Future<void> saveGifts(List<GiftModel> gifts) async {
-    await _giftsBox.clear();
+    if (_giftsBox == null) return;
+    await _giftsBox!.clear();
     for (var gift in gifts) {
-      await _giftsBox.put(gift.id, jsonEncode(gift.toJson()));
+      await _giftsBox!.put(gift.id, jsonEncode(gift.toJson()));
     }
   }
 
   List<GiftModel> getGifts() {
-    return _giftsBox.values
+    if (_giftsBox == null) return [];
+    return _giftsBox!.values
         .map((json) => GiftModel.fromJson(jsonDecode(json) as Map<String, dynamic>))
         .toList();
   }
 
   // Gift Usages
   Future<void> saveGiftUsage(GiftUsageModel usage) async {
-    await _giftUsagesBox.put(usage.id, jsonEncode(usage.toJson()));
+    if (_giftUsagesBox == null) return;
+    await _giftUsagesBox!.put(usage.id, jsonEncode(usage.toJson()));
   }
 
   List<GiftUsageModel> getGiftUsages() {
-    return _giftUsagesBox.values
+    if (_giftUsagesBox == null) return [];
+    return _giftUsagesBox!.values
         .map((json) => GiftUsageModel.fromJson(jsonDecode(json) as Map<String, dynamic>))
         .toList();
   }

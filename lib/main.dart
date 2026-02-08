@@ -8,7 +8,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   final storage = StorageService();
-  await storage.init();
+  try {
+    await storage.init();
+  } catch (e) {
+    // Web環境でHiveが使えない場合でも続行
+    debugPrint('Storage initialization failed, continuing without Hive: $e');
+  }
 
   runApp(
     ChangeNotifierProvider(
