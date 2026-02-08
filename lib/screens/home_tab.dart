@@ -99,6 +99,43 @@ class HomeTab extends StatelessWidget {
           children: [
             const SizedBox(height: 16),
             
+            // データが全く無い場合の表示
+            if (myEvents.isEmpty && limitedAllNews.isEmpty && limitedLocalNews.isEmpty && limitedLocalColumns.isEmpty)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(48.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.celebration_outlined,
+                        size: 64,
+                        color: Colors.grey.shade400,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'データを読み込み中...',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '少々お待ちください',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      const CircularProgressIndicator(),
+                    ],
+                  ),
+                ),
+              ),
+            
             // 1. 参加予定のイベント (カード表示、上限5件)
             if (myEvents.isNotEmpty) ...[
               _SectionTitle(title: '参加予定のイベント'),

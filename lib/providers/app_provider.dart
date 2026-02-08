@@ -53,7 +53,24 @@ class AppProvider with ChangeNotifier {
     // Subscribe to Firestore streams
     _subscribeToFirestore();
     
+    // Wait a moment for initial data load
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    // Generate demo data if Firebase is empty
+    await _checkAndGenerateDemoData();
+    
     debugPrint('✅ AppProvider initialization complete');
+  }
+  
+  Future<void> _checkAndGenerateDemoData() async {
+    // Check if we already have data in Firestore
+    if (_articles.isEmpty && _events.isEmpty) {
+      debugPrint('📝 No data found in Firestore. Generating demo data...');
+      await _generateDemoData();
+      debugPrint('✅ Demo data generation complete');
+    } else {
+      debugPrint('✅ Data already exists in Firestore (${_articles.length} articles, ${_events.length} events)');
+    }
   }
 
   void _subscribeToFirestore() {
@@ -401,5 +418,154 @@ class AppProvider with ChangeNotifier {
     return _giftUsages.where(
       (u) => u.giftId == giftId && u.userId == userId,
     ).length;
+  }
+  
+  // ========== Demo Data Generation ==========
+  
+  Future<void> _generateDemoData() async {
+    debugPrint('🎬 Generating demo data for Firebase...');
+    
+    final uuid = const Uuid();
+    final now = DateTime.now();
+    
+    // Generate demo articles
+    final demoArticles = [
+      ArticleModel(
+        id: uuid.v4(),
+        title: '渋谷の新しいカフェがオープン',
+        content: '渋谷駅から徒歩5分の場所に、地元の食材を使った新しいカフェがオープンしました。',
+        category: '店舗',
+        imageUrl: 'https://picsum.photos/seed/cafe1/400/300',
+        authorId: 'demo-author-1',
+        authorName: '編集部',
+        city: '渋谷区',
+        prefecture: '東京都',
+        viewCount: 150,
+        createdAt: now.subtract(const Duration(days: 2)),
+        updatedAt: now.subtract(const Duration(days: 2)),
+      ),
+      ArticleModel(
+        id: uuid.v4(),
+        title: '地域の音楽イベント開催決定',
+        content: '来月、地域の若者たちによる音楽イベントが開催されます。',
+        category: 'イベント',
+        imageUrl: 'https://picsum.photos/seed/music1/400/300',
+        authorId: 'demo-author-1',
+        authorName: '編集部',
+        city: '渋谷区',
+        prefecture: '東京都',
+        viewCount: 230,
+        createdAt: now.subtract(const Duration(days: 1)),
+        updatedAt: now.subtract(const Duration(days: 1)),
+      ),
+      ArticleModel(
+        id: uuid.v4(),
+        title: '商店街でフリーマーケット開催',
+        content: '週末に地域の商店街でフリーマーケットが開催されます。',
+        category: 'イベント',
+        imageUrl: 'https://picsum.photos/seed/market1/400/300',
+        authorId: 'demo-author-1',
+        authorName: '編集部',
+        city: '渋谷区',
+        prefecture: '東京都',
+        viewCount: 95,
+        createdAt: now.subtract(const Duration(days: 3)),
+        updatedAt: now.subtract(const Duration(days: 3)),
+      ),
+    ];
+    
+    // Generate demo events
+    final demoEvents = [
+      EventModel(
+        id: uuid.v4(),
+        title: '渋谷ストリートライブ 2024',
+        description: '地域の若手アーティストによるストリートライブイベント',
+        imageUrl: 'https://picsum.photos/seed/event1/400/300',
+        venue: '渋谷公会堂',
+        city: '渋谷区',
+        prefecture: '東京都',
+        eventDate: now.add(const Duration(days: 14)),
+        ticketPrice: 2500,
+        totalSeats: 500,
+        availableSeats: 342,
+        organizerId: 'demo-organizer-1',
+        organizerName: '渋谷イベント実行委員会',
+        createdAt: now.subtract(const Duration(days: 10)),
+      ),
+      EventModel(
+        id: uuid.v4(),
+        title: '地域交流フェスティバル',
+        description: '地域住民の交流を深めるフェスティバル',
+        imageUrl: 'https://picsum.photos/seed/event2/400/300',
+        venue: '渋谷区民会館',
+        city: '渋谷区',
+        prefecture: '東京都',
+        eventDate: now.add(const Duration(days: 21)),
+        ticketPrice: 1000,
+        totalSeats: 300,
+        availableSeats: 280,
+        organizerId: 'demo-organizer-2',
+        organizerName: '地域まちづくり協議会',
+        createdAt: now.subtract(const Duration(days: 7)),
+      ),
+    ];
+    
+    // Generate demo gifts
+    final demoGifts = [
+      GiftModel(
+        id: uuid.v4(),
+        title: 'カフェドリンク50%オフ',
+        description: '対象ドリンク全品50%オフ',
+        imageUrl: 'https://picsum.photos/seed/cafe-gift1/400/300',
+        storeId: 'store-cafe-local',
+        storeName: 'カフェ・ローカル',
+        city: '渋谷区',
+        prefecture: '東京都',
+        latitude: 35.6595,
+        longitude: 139.7004,
+        maxUsagePerUser: 1,
+        expiryDate: now.add(const Duration(days: 30)),
+        minAge: 17,
+        maxAge: 24,
+        targetSchools: ['高校生', '大学生'],
+        createdAt: now.subtract(const Duration(days: 5)),
+      ),
+      GiftModel(
+        id: uuid.v4(),
+        title: '書店10%オフクーポン',
+        description: '全商品10%オフ',
+        imageUrl: 'https://picsum.photos/seed/book-gift1/400/300',
+        storeId: 'store-bookstore',
+        storeName: 'ブックストア渋谷',
+        city: '渋谷区',
+        prefecture: '東京都',
+        latitude: 35.6612,
+        longitude: 139.7008,
+        maxUsagePerUser: 2,
+        expiryDate: now.add(const Duration(days: 60)),
+        minAge: null,
+        maxAge: null,
+        targetSchools: null,
+        createdAt: now.subtract(const Duration(days: 3)),
+      ),
+    ];
+    
+    // Save to Firestore
+    debugPrint('📝 Saving ${demoArticles.length} demo articles...');
+    for (var article in demoArticles) {
+      await _firestore.saveArticle(article);
+    }
+    
+    debugPrint('🎫 Saving ${demoEvents.length} demo events...');
+    for (var event in demoEvents) {
+      await _firestore.saveEvent(event);
+    }
+    
+    debugPrint('🎁 Saving ${demoGifts.length} demo gifts...');
+    for (var gift in demoGifts) {
+      await _firestore.saveGift(gift);
+    }
+    
+    debugPrint('✅ Demo data saved to Firestore successfully!');
   }
 }
