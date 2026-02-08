@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../models/user_model.dart';
-import 'auth_screen.dart';
+import 'welcome_screen.dart';
 import 'admin/admin_dashboard.dart';
 import 'admin/article_management_screen.dart';
 import 'admin/event_management_screen.dart';
@@ -64,7 +64,7 @@ class AccountTab extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => const AuthScreen()),
+                    MaterialPageRoute(builder: (_) => const WelcomeScreen()),
                   );
                 },
                 style: ElevatedButton.styleFrom(
@@ -336,7 +336,7 @@ class AccountTab extends StatelessWidget {
                 onPressed: () {
                   provider.logout();
                   Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => const AuthScreen()),
+                    MaterialPageRoute(builder: (_) => const WelcomeScreen()),
                   );
                 },
                 style: ElevatedButton.styleFrom(
@@ -430,3 +430,4 @@ class AccountTab extends StatelessWidget {
     );
   }
 }
+

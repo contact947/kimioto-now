@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/app_provider.dart';
 import 'services/storage_service.dart';
-import 'screens/splash_screen.dart';
+import 'screens/welcome_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -67,7 +67,7 @@ class MyApp extends StatelessWidget {
           fillColor: Colors.grey.shade50,
         ),
       ),
-      home: const SplashScreen(),
+      home: const WelcomeScreen(),
     );
   }
 }
