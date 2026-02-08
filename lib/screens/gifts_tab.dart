@@ -134,27 +134,7 @@ class _GiftsTabState extends State<GiftsTab> {
   }
 
   Widget _buildGiftList(AppProvider provider) {
-    // 現在のユーザーを取得
-    final currentUser = provider.currentUser;
-    
-    // ログインしていない場合は空のリストを表示
-    if (currentUser == null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.card_giftcard, size: 64, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            Text(
-              'ギフトを表示するにはログインしてください',
-              style: TextStyle(color: Colors.grey.shade600),
-            ),
-          ],
-        ),
-      );
-    }
-    
-    final gifts = provider.getAvailableGifts(currentUser);
+    final gifts = provider.getAvailableGifts(_currentPosition!);
 
     if (_error != null) {
       return Column(
