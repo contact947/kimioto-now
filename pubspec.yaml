@@ -1,5 +1,5 @@
 name: local_beat
-description: "地域の若者向け地域メディア × イベント × チケットアプリ"
+description: "KIMIOTO now - 地域の若者向け地域メディア × イベント × チケットアプリ"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev

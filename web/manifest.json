@@ -1,11 +1,11 @@
 {
-    "name": "local_beat",
-    "short_name": "local_beat",
+    "name": "KIMIOTO now",
+    "short_name": "KIMIOTO now",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "KIMIOTO now - 地域の若者向け地域メディア × イベント × チケットアプリ",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
