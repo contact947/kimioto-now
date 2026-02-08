@@ -4,7 +4,6 @@ import '../../providers/app_provider.dart';
 import '../../models/user_model.dart';
 import 'article_management_screen.dart';
 import 'event_management_screen.dart';
-import 'ticket_scanner_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -223,18 +222,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
     // 管理者とプランナー共通 (Admin は Planner 権限も含む)
     if (role == UserRole.admin || role == UserRole.planner) {
-      items.addAll([
-        {
-          'title': 'イベント管理',
-          'icon': Icons.event,
-          'screen': const EventManagementScreen(),
-        },
-        {
-          'title': 'チケットスキャン',
-          'icon': Icons.qr_code_scanner,
-          'screen': const TicketScannerScreen(),
-        },
-      ]);
+      items.add({
+        'title': 'イベント管理',
+        'icon': Icons.event,
+        'screen': const EventManagementScreen(),
+      });
     }
 
     return items;

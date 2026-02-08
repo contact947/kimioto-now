@@ -2,80 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../models/event_model.dart';
-import 'event_detail_screen.dart';
 import 'package:intl/intl.dart';
 
-class EventsTab extends StatefulWidget {
+class EventsTab extends StatelessWidget {
   const EventsTab({super.key});
 
   @override
-  State<EventsTab> createState() => _EventsTabState();
-}
-
-class _EventsTabState extends State<EventsTab> {
-  @override
-  void initState() {
-    super.initState();
-    // デバッグ用：画面表示時にデータ状態をログ出力
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _debugPrintEventData();
-    });
-  }
-
-  void _debugPrintEventData() {
-    final provider = Provider.of<AppProvider>(context, listen: false);
-    final user = provider.currentUser;
-    
-    debugPrint('=== EventsTab デバッグ情報 ===');
-    debugPrint('現在のユーザー: ${user?.name ?? "未ログイン"}');
-    debugPrint('ユーザーの地域: ${user?.city ?? "未設定"}');
-    debugPrint('全イベント数: ${provider.events.length}');
-    
-    if (provider.events.isNotEmpty) {
-      debugPrint('--- 全イベントリスト ---');
-      for (var event in provider.events) {
-        debugPrint('  - ${event.title} (${event.city}, ${event.eventDate})');
-      }
-    }
-    
-    if (user != null) {
-      final localEvents = provider.getEventsByCity(user.city);
-      debugPrint('地域のイベント数: ${localEvents.length}');
-      if (localEvents.isNotEmpty) {
-        debugPrint('--- 地域のイベント ---');
-        for (var event in localEvents) {
-          debugPrint('  - ${event.title}');
-        }
-      }
-    }
-    
-    final allEvents = provider.getUpcomingEvents();
-    debugPrint('全国のイベント数（未来のみ）: ${allEvents.length}');
-    if (allEvents.isNotEmpty) {
-      debugPrint('--- 全国のイベント ---');
-      for (var event in allEvents) {
-        debugPrint('  - ${event.title}');
-      }
-    }
-    debugPrint('============================');
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<AppProvider>(context);
-    final user = provider.currentUser;
-
-    // 地域のイベント
-    final List<EventModel> localEvents = user != null
-        ? provider.getEventsByCity(user.city)
-        : <EventModel>[];
-
-    // 全国のイベント
-    final List<EventModel> allEvents = provider.getUpcomingEvents();
-
-    // デバッグ情報を画面下部に表示（開発中のみ）
-    final bool showDebugInfo = true; // 本番環境では false にする
-
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -90,51 +23,20 @@ class _EventsTabState extends State<EventsTab> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          bottom: TabBar(
-            labelColor: Colors.blue.shade400,
-            unselectedLabelColor: Colors.grey.shade600,
-            indicatorColor: Colors.blue.shade400,
-            tabs: const [
+          bottom: const TabBar(
+            labelColor: Colors.blue,
+            unselectedLabelColor: Colors.grey,
+            indicatorColor: Colors.blue,
+            tabs: [
               Tab(text: '地域のイベント'),
               Tab(text: '全国のイベント'),
             ],
           ),
         ),
-        body: Column(
+        body: TabBarView(
           children: [
-            // デバッグ情報バー（開発中のみ表示）
-            if (showDebugInfo)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                color: Colors.amber.shade100,
-                child: Text(
-                  'デバッグ: 地域=${localEvents.length}件, 全国=${allEvents.length}件, 全データ=${provider.events.length}件',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.amber.shade900,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            // タブビュー
-            Expanded(
-              child: TabBarView(
-                children: [
-                  _EventListTab(
-                    events: localEvents,
-                    emptyMessage: user != null
-                        ? '${user.city}にはまだイベントがありません'
-                        : 'ログインして地域のイベントを表示',
-                  ),
-                  _EventListTab(
-                    events: allEvents,
-                    emptyMessage: '現在予定されているイベントがありません',
-                  ),
-                ],
-              ),
-            ),
+            _LocalEventsTab(),
+            _NationalEventsTab(),
           ],
         ),
       ),
@@ -142,63 +44,96 @@ class _EventsTabState extends State<EventsTab> {
   }
 }
 
-class _EventListTab extends StatelessWidget {
-  final List<EventModel> events;
-  final String emptyMessage;
-
-  const _EventListTab({
-    required this.events,
-    required this.emptyMessage,
-  });
-
+class _LocalEventsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    // データが空の場合の表示
-    if (events.isEmpty) {
-      return Container(
-        color: Colors.grey.shade50, // 背景色を明示的に指定
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.event_busy,
-                size: 80,
-                color: Colors.grey.shade300,
+    final provider = Provider.of<AppProvider>(context);
+    final user = provider.currentUser;
+
+    if (user == null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.location_off, size: 64, color: Colors.grey.shade400),
+            const SizedBox(height: 16),
+            Text(
+              '地域情報を設定するには\nログインしてください',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade600,
               ),
-              const SizedBox(height: 16),
-              Text(
-                emptyMessage,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey.shade600,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'イベントが追加されるまでお待ちください',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade500,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
     }
 
-    // データがある場合のリスト表示
-    return Container(
-      color: Colors.grey.shade50, // 背景色を明示的に指定
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: events.length,
-        itemBuilder: (context, index) {
-          return _EventCard(event: events[index]);
-        },
-      ),
+    final localEvents = provider.getLocalEvents(user.city);
+
+    if (localEvents.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.event_busy, size: 64, color: Colors.grey.shade400),
+            const SizedBox(height: 16),
+            Text(
+              '現在、${user.city}のイベントはありません',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: localEvents.length,
+      itemBuilder: (context, index) {
+        return _EventCard(event: localEvents[index]);
+      },
+    );
+  }
+}
+
+class _NationalEventsTab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final provider = Provider.of<AppProvider>(context);
+    final nationalEvents = provider.getNationalEvents();
+
+    if (nationalEvents.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.event_busy, size: 64, color: Colors.grey.shade400),
+            const SizedBox(height: 16),
+            Text(
+              '現在、イベントはありません',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: nationalEvents.length,
+      itemBuilder: (context, index) {
+        return _EventCard(event: nationalEvents[index]);
+      },
     );
   }
 }
@@ -214,25 +149,13 @@ class _EventCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => EventDetailScreen(event: event),
-          ),
-        );
+        _showEventDetail(context, event);
       },
-      child: Container(
+      child: Card(
         margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
+        elevation: 2,
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,14 +165,14 @@ class _EventCard extends StatelessWidget {
               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
               child: Image.network(
                 event.imageUrl,
-                height: 160,
+                height: 150,
                 width: double.infinity,
                 fit: BoxFit.cover,
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
                   return Container(
-                    height: 160,
-                    color: Colors.grey.shade100,
+                    height: 150,
+                    color: Colors.grey.shade200,
                     child: Center(
                       child: CircularProgressIndicator(
                         value: loadingProgress.expectedTotalBytes != null
@@ -261,32 +184,14 @@ class _EventCard extends StatelessWidget {
                   );
                 },
                 errorBuilder: (context, error, stackTrace) {
-                  debugPrint('画像読み込みエラー: $error');
                   return Container(
-                    height: 160,
+                    height: 150,
                     color: Colors.grey.shade200,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.image_not_supported, 
-                          size: 64, 
-                          color: Colors.grey.shade400,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '画像を読み込めませんでした',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: Icon(Icons.image, size: 48, color: Colors.grey.shade400),
                   );
                 },
               ),
             ),
-            // イベント情報
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -296,78 +201,51 @@ class _EventCard extends StatelessWidget {
                   Text(
                     event.title,
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 12),
-                  // 場所
-                  Row(
-                    children: [
-                      Icon(Icons.location_on, size: 16, color: Colors.grey.shade600),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          event.venue,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade700,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  // 日時
+                  const SizedBox(height: 8),
+                  // 開催日時
                   Row(
                     children: [
                       Icon(Icons.calendar_today, size: 16, color: Colors.grey.shade600),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 8),
                       Text(
-                        dateFormat.format(event.eventDate),
+                        dateFormat.format(event.date),
                         style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade700,
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  // 価格と空席情報
+                  const SizedBox(height: 4),
+                  // 開催場所
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      Icon(Icons.location_on, size: 16, color: Colors.grey.shade600),
+                      const SizedBox(width: 8),
                       Text(
-                        '¥${event.ticketPrice.toStringAsFixed(0)}',
+                        event.location,
                         style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue.shade700,
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: event.availableSeats > 0 
-                              ? Colors.green.shade50 
-                              : Colors.red.shade50,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          event.availableSeats > 0 
-                              ? '残り${event.availableSeats}席'
-                              : '満席',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: event.availableSeats > 0
-                                ? Colors.green.shade700
-                                : Colors.red.shade700,
-                            fontWeight: FontWeight.w600,
-                          ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  // 主催者
+                  Row(
+                    children: [
+                      Icon(Icons.person, size: 16, color: Colors.grey.shade600),
+                      const SizedBox(width: 8),
+                      Text(
+                        event.organizer,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
                         ),
                       ),
                     ],
@@ -378,6 +256,162 @@ class _EventCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _showEventDetail(BuildContext context, EventModel event) {
+    final dateFormat = DateFormat('yyyy/MM/dd (E) HH:mm', 'ja_JP');
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // イベント画像
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: Image.network(
+                    event.imageUrl,
+                    height: 200,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 200,
+                        color: Colors.grey.shade200,
+                        child: Icon(Icons.image, size: 64, color: Colors.grey.shade400),
+                      );
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        event.title,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _DetailRow(
+                        icon: Icons.calendar_today,
+                        label: '開催日時',
+                        value: dateFormat.format(event.date),
+                      ),
+                      const SizedBox(height: 12),
+                      _DetailRow(
+                        icon: Icons.location_on,
+                        label: '開催場所',
+                        value: event.location,
+                      ),
+                      const SizedBox(height: 12),
+                      _DetailRow(
+                        icon: Icons.place,
+                        label: '地域',
+                        value: '${event.prefecture} ${event.city}',
+                      ),
+                      const SizedBox(height: 12),
+                      _DetailRow(
+                        icon: Icons.person,
+                        label: '主催者',
+                        value: event.organizer,
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        '詳細',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        event.description,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade700,
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text('閉じる'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _DetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 20, color: Colors.blue.shade600),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

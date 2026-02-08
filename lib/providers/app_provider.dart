@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import '../models/article_model.dart';
 import '../models/event_model.dart';
-import '../models/ticket_model.dart';
 import '../models/gift_model.dart';
 import '../models/gift_usage_model.dart';
 import '../services/storage_service.dart';
@@ -16,7 +15,6 @@ class AppProvider with ChangeNotifier {
   UserModel? _currentUser;
   List<ArticleModel> _articles = [];
   List<EventModel> _events = [];
-  List<TicketModel> _tickets = [];
   List<GiftModel> _gifts = [];
   List<GiftUsageModel> _giftUsages = [];
 
@@ -26,9 +24,9 @@ class AppProvider with ChangeNotifier {
   UserModel? get currentUser => _currentUser;
   bool get isLoggedIn => _currentUser != null;
   bool get isAdmin => _currentUser?.role == UserRole.admin;
+  bool get isPlanner => _currentUser?.role == UserRole.planner || isAdmin;
   List<ArticleModel> get articles => _articles;
   List<EventModel> get events => _events;
-  List<TicketModel> get tickets => _tickets;
   List<GiftModel> get gifts => _gifts;
 
   // Initialize
@@ -36,7 +34,6 @@ class AppProvider with ChangeNotifier {
     _currentUser = await _storage.getCurrentUser();
     _articles = _storage.getArticles();
     _events = _storage.getEvents();
-    _tickets = _storage.getTickets();
     _gifts = _storage.getGifts();
     _giftUsages = _storage.getGiftUsages();
     
@@ -114,15 +111,13 @@ class AppProvider with ChangeNotifier {
   }
 
   // Events
-  List<EventModel> getEventsByCity(String city) {
-    return _events.where((e) => e.city == city).toList()
-      ..sort((a, b) => a.eventDate.compareTo(b.eventDate));
+  List<EventModel> getLocalEvents(String userCity) {
+    return _events.where((e) => e.city == userCity).toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
   }
 
-  List<EventModel> getUpcomingEvents() {
-    final now = DateTime.now();
-    return _events.where((e) => e.eventDate.isAfter(now)).toList()
-      ..sort((a, b) => a.eventDate.compareTo(b.eventDate));
+  List<EventModel> getNationalEvents() {
+    return _events..sort((a, b) => a.date.compareTo(b.date));
   }
 
   Future<void> addEvent(EventModel event) async {
@@ -131,52 +126,18 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Tickets
-  List<TicketModel> getUserTickets(String userId) {
-    return _tickets.where((t) => t.userId == userId).toList()
-      ..sort((a, b) => b.purchasedAt.compareTo(a.purchasedAt));
+  Future<void> updateEvent(EventModel event) async {
+    final index = _events.indexWhere((e) => e.id == event.id);
+    if (index != -1) {
+      _events[index] = event;
+      await _storage.saveEvents(_events);
+      notifyListeners();
+    }
   }
 
-  Future<void> purchaseTicket(EventModel event) async {
-    if (_currentUser == null) return;
-    
-    final ticket = TicketModel(
-      id: const Uuid().v4(),
-      eventId: event.id,
-      eventTitle: event.title,
-      userId: _currentUser!.id,
-      userName: _currentUser!.name,
-      qrCode: const Uuid().v4(),
-      isUsed: false,
-      purchasedAt: DateTime.now(),
-    );
-    
-    _tickets.add(ticket);
-    await _storage.saveTicket(ticket);
-    
-    // イベントの空席を減らす
-    final eventIndex = _events.indexWhere((e) => e.id == event.id);
-    if (eventIndex != -1) {
-      final updatedEvent = EventModel(
-        id: event.id,
-        title: event.title,
-        description: event.description,
-        imageUrl: event.imageUrl,
-        venue: event.venue,
-        city: event.city,
-        prefecture: event.prefecture,
-        eventDate: event.eventDate,
-        ticketPrice: event.ticketPrice,
-        totalSeats: event.totalSeats,
-        availableSeats: event.availableSeats - 1,
-        organizerId: event.organizerId,
-        organizerName: event.organizerName,
-        createdAt: event.createdAt,
-      );
-      _events[eventIndex] = updatedEvent;
-      await _storage.saveEvents(_events);
-    }
-    
+  Future<void> deleteEvent(String id) async {
+    _events.removeWhere((e) => e.id == id);
+    await _storage.saveEvents(_events);
     notifyListeners();
   }
 
@@ -303,34 +264,46 @@ class AppProvider with ChangeNotifier {
       EventModel(
         id: const Uuid().v4(),
         title: '渋谷ストリートライブ 2024',
-        description: '地元のアーティストが集結!熱いライブパフォーマンスをお届けします。',
-        imageUrl: 'https://picsum.photos/seed/event1/400/300',
-        venue: '渋谷公会堂',
+        description: '地元のアーティストが集結!熱いライブパフォーマンスをお届けします。入場無料、誰でも参加可能です。',
+        date: DateTime.now().add(const Duration(days: 14)),
+        location: '渋谷公会堂',
+        organizer: '渋谷イベント実行委員会',
+        imageUrl: 'https://picsum.photos/seed/event1/400/200',
         city: '渋谷区',
         prefecture: '東京都',
-        eventDate: DateTime.now().add(const Duration(days: 14)),
-        ticketPrice: 2500,
-        totalSeats: 500,
-        availableSeats: 342,
-        organizerId: 'org1',
-        organizerName: '渋谷イベント実行委員会',
-        createdAt: DateTime.now().subtract(const Duration(days: 10)),
       ),
       EventModel(
         id: const Uuid().v4(),
         title: '地域交流フェスティバル',
-        description: '地域の魅力を再発見!飲食ブース、ワークショップ、ステージイベントなど盛りだくさん。',
-        imageUrl: 'https://picsum.photos/seed/event2/400/300',
-        venue: '渋谷区民会館',
+        description: '地域の魅力を再発見!飲食ブース、ワークショップ、ステージイベントなど盛りだくさん。家族みんなで楽しめます。',
+        date: DateTime.now().add(const Duration(days: 21)),
+        location: '渋谷区民会館',
+        organizer: '地域まちづくり協議会',
+        imageUrl: 'https://picsum.photos/seed/event2/400/200',
         city: '渋谷区',
         prefecture: '東京都',
-        eventDate: DateTime.now().add(const Duration(days: 21)),
-        ticketPrice: 1000,
-        totalSeats: 300,
-        availableSeats: 280,
-        organizerId: 'org2',
-        organizerName: '地域まちづくり協議会',
-        createdAt: DateTime.now().subtract(const Duration(days: 7)),
+      ),
+      EventModel(
+        id: const Uuid().v4(),
+        title: '東京スポーツフェス2024',
+        description: '都内最大級のスポーツイベント!各種競技の体験コーナーやプロ選手のデモンストレーションも開催します。',
+        date: DateTime.now().add(const Duration(days: 28)),
+        location: '東京体育館',
+        organizer: '東京スポーツ協会',
+        imageUrl: 'https://picsum.photos/seed/event3/400/200',
+        city: '新宿区',
+        prefecture: '東京都',
+      ),
+      EventModel(
+        id: const Uuid().v4(),
+        title: '全国グルメフェスティバル',
+        description: '全国各地の美味しいグルメが大集合!ご当地グルメを食べ比べしてお気に入りを見つけよう。',
+        date: DateTime.now().add(const Duration(days: 35)),
+        location: '代々木公園',
+        organizer: '全国グルメ振興協会',
+        imageUrl: 'https://picsum.photos/seed/event4/400/200',
+        city: '渋谷区',
+        prefecture: '東京都',
       ),
     ];
     await _storage.saveEvents(_events);

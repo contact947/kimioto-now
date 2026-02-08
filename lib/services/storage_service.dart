@@ -3,7 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import '../models/article_model.dart';
 import '../models/event_model.dart';
-import '../models/ticket_model.dart';
 import '../models/gift_model.dart';
 import '../models/gift_usage_model.dart';
 import 'dart:convert';
@@ -14,7 +13,6 @@ class StorageService {
   
   late Box<String> _articlesBox;
   late Box<String> _eventsBox;
-  late Box<String> _ticketsBox;
   late Box<String> _giftsBox;
   late Box<String> _giftUsagesBox;
 
@@ -22,7 +20,6 @@ class StorageService {
     await Hive.initFlutter();
     _articlesBox = await Hive.openBox<String>('articles');
     _eventsBox = await Hive.openBox<String>('events');
-    _ticketsBox = await Hive.openBox<String>('tickets');
     _giftsBox = await Hive.openBox<String>('gifts');
     _giftUsagesBox = await Hive.openBox<String>('gift_usages');
   }
@@ -80,15 +77,12 @@ class StorageService {
         .toList();
   }
 
-  // Tickets
-  Future<void> saveTicket(TicketModel ticket) async {
-    await _ticketsBox.put(ticket.id, jsonEncode(ticket.toJson()));
+  Future<void> saveEvent(EventModel event) async {
+    await _eventsBox.put(event.id, jsonEncode(event.toJson()));
   }
 
-  List<TicketModel> getTickets() {
-    return _ticketsBox.values
-        .map((json) => TicketModel.fromJson(jsonDecode(json) as Map<String, dynamic>))
-        .toList();
+  Future<void> deleteEvent(String id) async {
+    await _eventsBox.delete(id);
   }
 
   // Gifts

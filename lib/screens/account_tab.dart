@@ -2,14 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../models/user_model.dart';
-import '../models/event_model.dart';
 import 'auth_screen.dart';
 import 'admin/admin_dashboard.dart';
 import 'admin/article_management_screen.dart';
 import 'admin/event_management_screen.dart';
-import 'admin/ticket_scanner_screen.dart';
-import 'ticket_screen.dart';
-import 'package:intl/intl.dart';
 
 class AccountTab extends StatelessWidget {
   const AccountTab({super.key});
@@ -91,66 +87,9 @@ class AccountTab extends StatelessWidget {
   }
 
   Widget _buildUserView(BuildContext context, UserModel user, AppProvider provider) {
-    // 参加予定のイベント(チケット所有)
-    final myTickets = provider.getUserTickets(user.id);
-    final myEvents = myTickets
-        .map((t) => provider.events.firstWhere(
-              (e) => e.id == t.eventId,
-              orElse: () => EventModel(
-                id: '',
-                title: '',
-                description: '',
-                imageUrl: '',
-                eventDate: DateTime.now(),
-                venue: '',
-                city: '',
-                prefecture: '',
-                ticketPrice: 0,
-                availableSeats: 0,
-                totalSeats: 0,
-                organizerId: '',
-                organizerName: '',
-                createdAt: DateTime.now(),
-              ),
-            ))
-        .where((e) => e.id.isNotEmpty)
-        .toList();
-
     return SingleChildScrollView(
       child: Column(
         children: [
-          // 参加予定のイベント
-          if (myEvents.isNotEmpty) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.event_available, color: Colors.blue.shade700),
-                      const SizedBox(width: 8),
-                      const Text(
-                        '参加予定のイベント',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  ...myEvents.map((event) => _buildMyEventCard(context, event)),
-                ],
-              ),
-            ),
-          ],
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(24),
@@ -195,28 +134,40 @@ class AccountTab extends StatelessWidget {
                     color: Colors.grey.shade600,
                   ),
                 ),
-                if (user.role == UserRole.admin) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.purple.shade50,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '管理者',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.purple.shade700,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _getRoleBadgeColor(user.role),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                ],
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _getRoleIcon(user.role),
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _getRoleName(user.role),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
+
           const SizedBox(height: 16),
+
+          // ユーザー情報
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
@@ -226,74 +177,41 @@ class AccountTab extends StatelessWidget {
             child: Column(
               children: [
                 _buildInfoTile(
-                  icon: Icons.badge,
-                  label: 'アカウントID',
-                  value: user.id,
-                ),
-                const Divider(height: 1),
-                _buildInfoTile(
-                  icon: Icons.cake,
-                  label: '年齢',
+                  title: '年齢',
                   value: '${user.age}歳',
+                  icon: Icons.cake_outlined,
                 ),
-                const Divider(height: 1),
+                Divider(height: 1, color: Colors.grey.shade200),
                 _buildInfoTile(
-                  icon: Icons.wc,
-                  label: '性別',
-                  value: user.gender,
-                ),
-                const Divider(height: 1),
-                _buildInfoTile(
-                  icon: Icons.location_city,
-                  label: '住所',
+                  title: '地域',
                   value: '${user.prefecture} ${user.city}',
+                  icon: Icons.location_on_outlined,
                 ),
               ],
             ),
           ),
+
           const SizedBox(height: 16),
+
+          // 管理者専用メニュー
           if (user.role == UserRole.admin || user.role == UserRole.planner) ...[
-            // スマホ版: 管理機能を直接表示
-            if (MediaQuery.of(context).size.width < 600) ...[
-              // 記事管理 (admin専用)
-              if (user.role == UserRole.admin)
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: ListTile(
-                    leading: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.article,
-                        color: Colors.blue.shade700,
-                        size: 24,
-                      ),
-                    ),
-                    title: const Text(
-                      '記事管理',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ArticleManagementScreen(),
-                        ),
-                      );
-                    },
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '管理メニュー',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
                   ),
                 ),
-              if (user.role == UserRole.admin) const SizedBox(height: 12),
-              // イベント管理 (admin & planner共通)
+              ),
+            ),
+
+            // スマホ版: 個別の管理画面へのリンク
+            if (MediaQuery.of(context).size.width < 600) ...[
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
@@ -305,17 +223,17 @@ class AccountTab extends StatelessWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.green.shade50,
+                      color: Colors.blue.shade50,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
-                      Icons.event,
-                      color: Colors.green.shade700,
+                      Icons.article,
+                      color: Colors.blue.shade700,
                       size: 24,
                     ),
                   ),
                   title: const Text(
-                    'イベント管理',
+                    '記事管理',
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                   trailing: const Icon(Icons.chevron_right),
@@ -323,14 +241,14 @@ class AccountTab extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const EventManagementScreen(),
+                        builder: (_) => const ArticleManagementScreen(),
                       ),
                     );
                   },
                 ),
               ),
               const SizedBox(height: 12),
-              // チケットスキャン (admin & planner共通)
+              // イベント管理 (admin & planner共通)
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
@@ -346,13 +264,13 @@ class AccountTab extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
-                      Icons.qr_code_scanner,
+                      Icons.event,
                       color: Colors.orange.shade700,
                       size: 24,
                     ),
                   ),
                   title: const Text(
-                    'チケットスキャン',
+                    'イベント管理',
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                   trailing: const Icon(Icons.chevron_right),
@@ -360,7 +278,7 @@ class AccountTab extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const TicketScannerScreen(),
+                        builder: (_) => const EventManagementScreen(),
                       ),
                     );
                   },
@@ -380,30 +298,26 @@ class AccountTab extends StatelessWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.purple.shade50,
+                      color: Colors.blue.shade50,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
-                      Icons.admin_panel_settings,
-                      color: Colors.purple.shade700,
+                      Icons.dashboard,
+                      color: Colors.blue.shade700,
                       size: 24,
                     ),
                   ),
                   title: const Text(
-                    '管理画面',
+                    '管理ダッシュボード',
                     style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: Text(
-                    user.role == UserRole.admin
-                        ? '記事・イベント・チケット管理'
-                        : 'イベント・チケット管理',
-                    style: const TextStyle(fontSize: 12),
                   ),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const AdminDashboard()),
+                      MaterialPageRoute(
+                        builder: (_) => const AdminDashboard(),
+                      ),
                     );
                   },
                 ),
@@ -411,158 +325,90 @@ class AccountTab extends StatelessWidget {
               const SizedBox(height: 16),
             ],
           ],
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: ListTile(
-              leading: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.logout,
-                  color: Colors.red.shade700,
-                  size: 24,
-                ),
-              ),
-              title: Text(
-                'ログアウト',
-                style: TextStyle(
-                  color: Colors.red.shade700,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              onTap: () async {
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('ログアウト'),
-                    content: const Text('ログアウトしますか?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('キャンセル'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.red,
-                        ),
-                        child: const Text('ログアウト'),
-                      ),
-                    ],
-                  ),
-                );
 
-                if (confirmed == true && context.mounted) {
-                  await provider.logout();
-                  if (context.mounted) {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (_) => const AuthScreen()),
-                    );
-                  }
-                }
-              },
+          // ログアウトボタン
+          Container(
+            margin: const EdgeInsets.all(16),
+            child: SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: () {
+                  provider.logout();
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const AuthScreen()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey.shade200,
+                  foregroundColor: Colors.black87,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'ログアウト',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 40),
         ],
       ),
     );
   }
 
-  Widget _buildMyEventCard(BuildContext context, EventModel event) {
-    final dateFormat = DateFormat('yyyy/MM/dd HH:mm', 'ja_JP');
-    
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade200),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(12),
-        leading: ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: Image.network(
-            event.imageUrl,
-            width: 60,
-            height: 60,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              width: 60,
-              height: 60,
-              color: Colors.grey.shade200,
-              child: const Icon(Icons.event, size: 24),
-            ),
-          ),
-        ),
-        title: Text(
-          event.title,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 6),
-          child: Text(
-            dateFormat.format(event.eventDate),
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade600,
-            ),
-          ),
-        ),
-        trailing: ElevatedButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => TicketScreen(eventId: event.id),
-              ),
-            );
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue.shade400,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            minimumSize: Size.zero,
-          ),
-          child: const Text(
-            'チケット',
-            style: TextStyle(fontSize: 12),
-          ),
-        ),
-      ),
-    );
+  Color _getRoleBadgeColor(UserRole role) {
+    switch (role) {
+      case UserRole.admin:
+        return Colors.red.shade400;
+      case UserRole.planner:
+        return Colors.orange.shade400;
+      case UserRole.user:
+        return Colors.green.shade400;
+    }
+  }
+
+  IconData _getRoleIcon(UserRole role) {
+    switch (role) {
+      case UserRole.admin:
+        return Icons.admin_panel_settings;
+      case UserRole.planner:
+        return Icons.event_note;
+      case UserRole.user:
+        return Icons.person;
+    }
+  }
+
+  String _getRoleName(UserRole role) {
+    switch (role) {
+      case UserRole.admin:
+        return '管理者';
+      case UserRole.planner:
+        return 'プランナー';
+      case UserRole.user:
+        return 'ユーザー';
+    }
   }
 
   Widget _buildInfoTile({
-    required IconData icon,
-    required String label,
+    required String title,
     required String value,
+    required IconData icon,
   }) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: Colors.grey.shade600),
+          Icon(icon, size: 24, color: Colors.grey.shade600),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  label,
+                  title,
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey.shade600,
